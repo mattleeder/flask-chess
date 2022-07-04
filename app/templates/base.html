@@ -1,0 +1,89 @@
+{% block doc -%}
+<!doctype html>
+<html{% block html_attribs %}{% endblock html_attribs %}>
+{%- block html %}
+
+<head>
+{% block head %}
+<title>
+    {% block title %}Jagdeep Chess{% endblock %}
+</title>
+
+{% block metas %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% endblock %}
+{% block styles %}
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+{% endblock %}
+{% endblock %}
+</head>
+
+<body{% block body_attribs %}{% endblock %}>
+{% block body %}
+{% block navbar %}
+<nav class="navbar navbar-dark navbar-expand-lg sticky-top bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('main.home') }}">Jagdeep Chess</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('main.home') }}">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('main.play') }}">Play</a>
+          </li>
+          {% if current_user.is_authenticated %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Account
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <li><a class="dropdown-item" href="{{ url_for('account.logout') }}">Log Out</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('account.account_settings') }}">Account Settings</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#">Something else here</a></li>
+            </ul>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('account.login') }}">Log in</a>
+          </li>
+          {% endif %}
+        </ul>
+        <form class="d-flex" role="search" action="/search" method="get">
+          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" name="query" id="query">
+          <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
+    {% block page_content %}{% endblock %}
+</div>
+{% endblock %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{url_for('static', filename='js/bootstrap.bundle.min.js')}}"></script>
+<script src="{{url_for('static', filename='js/jquery-3.6.0.min.js')}}"></script>
+
+{% endblock %}
+
+</body>
+
+{%- endblock html %}
+</html>
+{% endblock doc -%}

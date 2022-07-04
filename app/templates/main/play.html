@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Jagedeep Chess - Play{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link href="{{ url_for('static', filename='css/main/play.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block body_attribs %}
+{{ super() }}
+onunload="removeClientFromQueue()"
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+<div class="page-header">
+    <h1>Play</h1>
+</div>
+<script src="{{url_for('static', filename='js/queue.js')}}"></script>
+<input type="text" id="move">
+<button onclick="sendJSON()">Send JSON</button>
+<button onclick="receiveJSON()">Receive JSON</button>
+<button id="queue-btn" onclick="toggleQueue()">Join Queue</button>
+<p class="result" id="result" style="color:green">No JSON</p>
+<p class="result" id="result2" style="color:green">No JSON2</p>
+{% endblock %}
