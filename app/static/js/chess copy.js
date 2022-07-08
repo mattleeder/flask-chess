@@ -206,11 +206,10 @@ class Piece {
             throw new TypeError("Piece instance cannot be constructed directly")
         }
         this.colour = colour;
-        this.class = this.constructor.name;
-        this.position = position; // [file, rank]
+        this.rank = this.constructor.name;
+        this.position = position; // [row, col]
         this.gameArea = gameArea;
         this.has_moved = has_moved;
-        // this.moveCache = [];
 
         // These must be defined in the subclasses
         // this.moves = null;
@@ -227,7 +226,7 @@ class Piece {
             throw `Position must be length 2`;
         }
         else if (Math.max(...newPosition) > 7 || Math.min(...newPosition) < 0){
-            throw new OutOfBoundsError(`${newPosition} out of Bounds, must be (0, 0) to (7, 7)`);
+            throw new OutOfBoundsError(`${newPosition} out of Bounds, must be (0, 0) to (8, 8)`);
         }
         this._position = newPosition;
     }
@@ -236,11 +235,11 @@ class Piece {
         return this._position;
     }
 
-    get file() {
+    get row() {
         return this._position[0];
     }
 
-    get rank() {
+    get col() {
         return this._position[1]
     }
 
@@ -249,17 +248,17 @@ class Piece {
     }
 
     str() {
-        return `${this.colour} ${this.class} at ${this.position}`;
+        return `${this.colour} ${this.rank} at ${this.position}`;
     }
 
     draw() {
         this.gameArea.canvas.getContext("2d").drawImage(
-            pieceImage, sx[this.class], sy[this.colour], pieceImgDimension, pieceImgDimension, this.file * pieceImgDimension, ((7 - this.rank) * pieceImgDimension),
+            pieceImage, sx[this.rank], sy[this.colour], pieceImgDimension, pieceImgDimension, this.row * pieceImgDimension, ((7 - this.col) * pieceImgDimension),
             pieceImgDimension, pieceImgDimension
         );
     }
 
-    promote(file, rank) {
+    promote(row, col) {
         // All pieces will call this, so if a piece cant promote then it will do nothing
         return;
     }
@@ -267,12 +266,14 @@ class Piece {
     calculateMoves() {
 
         let [validMoves, validCaptures, defending] = this.moveLoop();
+
         let illegalMoves;
         let legalMoves;
+
         let legalCaptures;
         let illegalCaptures;
 
-        if (this.isPinned()) {
+        if (!(this.rank == "King") && this.isPinned()) {
             console.log(`${this.str()} is pinned`);
 
             [legalMoves, illegalMoves] = this.pinnedValidation(validMoves);
@@ -300,8 +301,13 @@ class Piece {
         
         let validMoves = [];
         let invalidMoves = [];
+        console.log(attackingKing);
         let attacker = Array.from(attackingKing[this.colour])[0];
+        console.log(`Attacker is: ${attacker.str()}`);
 
+        if (this.rank == "King") {
+            return [moves, invalidMoves];
+        }
         if (this.pieceManager.king[this.colour].inCheck()) {
             // If in double check, only King can move
             if (attackingKing[this.colour].size == 2) {
@@ -315,7 +321,7 @@ class Piece {
                         validMoves.push(move);
                     }
                     // Check if enpassant can be used to capture attacker
-                    else if(attacker.class == "Pawn" && enpassantCapture && enpassantCapture.equals([attacker.position[0], attacker.position[1] + this.moves[0][1]])) {
+                    else if(attacker.rank == "Pawn" && enpassantCapture.equals([attacker.position[0], attacker.position[1] + this.moves[0][1]])) {
                         if (!(validMoves.contains([enpassantCapture]))) {
                             validMoves.push(enpassantCapture);
                         }
@@ -349,7 +355,7 @@ class Piece {
                     validMoves.push(considerationPosition);
                 }
                 else if (this.colour != piece.colour) {
-                    if (piece.class != "King") {
+                    if (piece.rank != "King") {
                         validCaptures.push(considerationPosition);
                         break;
                     }
@@ -362,6 +368,7 @@ class Piece {
 
                     // Keep track of pieces attacking kings
                     attackingKing[enemyColour].add(this);
+                    console.log(`Adding ${this.str()} to attackingKing`);
 
                     while (true) {
                         let magnitudeCopy = magnitude + 1;
@@ -443,7 +450,7 @@ class Piece {
             else if (piece.colour == this.colour) {
                 return false;
             }
-            else if (["King", "Pawn", "Knight"].includes(piece.class)) {
+            else if (["King", "Pawn", "Knight"].includes(piece.rank)) {
                 return false;
             }
             else if (!(piece.moves.contains(vectorToKing))) {
@@ -489,12 +496,14 @@ class Piece {
         if (kingPiece.inCheck()) {
             if (attackingKing[enemyColour].size == 1) {
                 let attacker = Array.from(attackingKing[enemyColour])[0];
+                console.log(`Attacker is ${attacker.str()}`);
                 let direction = chessUnitDirectionVector(attacker.position, kingPiece.position);
+                console.log(`Adding ${attacker.position} to validCheckDefenses`);
                 validCheckDefenses.add(attacker.position);
                 let magnitude = 1;
                 while (true) {
                     let newMove = addVector(attacker.position, scaleVector(direction, magnitude));
-                    if (attacker.class == "Knight") { // Knight will be attacking king on magnitude = 1
+                    if (attacker.rank == "Knight") { // Knight will be attacking king on magnitude = 1
                         break;
                     }
                     if (this.pieceManager.squares[newMove[0]][newMove[1]].piece) {
@@ -514,8 +523,6 @@ class Piece {
         let allMoves = this.calculateMoves();
         let moves = allMoves[0];
         let captures = allMoves[1];
-        //let moves = this.moveCache;
-        //let captures = [];
         let ctx = this.gameArea.canvas.getContext("2d");
         ctx.fillStyle = "black";
         moves.forEach(move => {
@@ -686,14 +693,6 @@ class King extends Piece {
 
         return validatedMoves;
     }
-
-    checkValidation(moves) {
-        return [moves, []];
-    }
-
-    isPinned() {
-        return false;
-    }
 }
 
 class Pawn extends Piece {
@@ -728,12 +727,13 @@ class Pawn extends Piece {
                 if ((piece && piece.colour != this.colour) || move.equals(enpassantCapture)) {
                     captures.push(move);
                     // If attacking King, need to add to attacking king Array set
-                    if (piece && piece.class == "King") {
+                    if (piece && piece.rank == "King") {
                         let enemyColour = "White";
                         if (this.colour == "White") {
                             enemyColour = "Black";
                         }
                         attackingKing[enemyColour].add(this);
+                        console.log(`Adding ${this.str()} to attackingKing`);
                     }
                 }
                 else {
@@ -748,9 +748,9 @@ class Pawn extends Piece {
         return [moves, captures, defending];
     }
 
-    promote(file, rank) {
-        if (rank == 0 || rank == 7) {
-            this.pieceManager.createPromotionWindow(file, rank);
+    promote(row, col) {
+        if (col == 0 || col == 7) {
+            this.pieceManager.createPromotionWindow(row, col);
         }
     }
 }
@@ -793,12 +793,19 @@ var myGameArea = {
     }
 }
 
-function selectPiece(file, rank) {
-    /*Check click for selectable piece, piece must be of players colour
-    and it must be players turn*/
-    let piece = board.getSquare(file, rank).piece;
+function deselectPiece() {
+    return;
+}
+
+function postMove() {
+    return;
+}
+
+function selectPiece(row, col) {
+    let piece = board.getSquare(row, col).piece;
+    let control = board.getSquare(row, col).control;
     if (!piece) {
-        console.log("Empty square")
+        console.log(`Empty square, controlled by White: ${control["White"]}, controlled by Black: ${control["Black"]}`);
         return;
     }
     else if (piece.colour != playerColour) {
@@ -815,36 +822,32 @@ function selectPiece(file, rank) {
     return;
 }
 
-function sendMove(selectedPiece, file, rank, promotionRank) {
-    // Send move to websocket
+function sendMove(selectedPiece, row, col, promotionRank) {
     console.log("Sending move");
-    socket.emit('move', JSON.stringify({'piece' : [selectedPiece.file, selectedPiece.rank],
-        'move' : [file, rank], 'turn' : turnGenSend.next().value, 'promotionRank' : promotionRank, 'room' : room}));
+    socket.emit('move', JSON.stringify({'piece' : [selectedPiece.row, selectedPiece.col],
+        'move' : [row, col], 'turn' : turnGenSend.next().value, 'promotionRank' : promotionRank, 'room' : room}));
 }
 
 function receivedMove(data) {
-    // Parses data
-    let {
-        "piece" : [oldRow, oldCol],
-        "move" : [file, rank],
-        "promotionRank": promotionRank,
-        "turn" : nextTurn
-    } = data;
-
-
+    let oldRow = data['piece'][0];
+    let oldCol = data['piece'][1];
+    let row = data['move'][0];
+    let col = data['move'][1];
+    let promotionRank = data['promotionRank'];
     let piece = board.squares[oldRow][oldCol].piece;
-    console.log(`Received move from server, moving ${piece.str()} to ${file}, ${rank}`)
-    pieceManager.movePiece(piece, file, rank, promotionRank);
+    console.log(`Received move from server, moving ${piece.str()} to ${row}, ${col}`)
+    pieceManager.movePiece(piece, row, col, promotionRank);
     deselectionProcess();
     attackingKing["White"].clear();
     attackingKing["Black"].clear();
     board.evaluateSquareControl(turn);
-    turn = nextTurn;
+    turn = data['turn'];
     piece.checkDefenses();
 }
 
 function deselectionProcess() {
     drawnMoves.clear();
+    deselectPiece();
     myGameArea.drawBoard();
     pieceManager.drawPieces();
     selectedPiece = null;
@@ -857,75 +860,72 @@ function postMoveProcess() {
     turn = turnGenLocal.next().value;
 }
 
-function makeMove(selectedPiece, file, rank, promotionRank) {
-    sendMove(selectedPiece, file, rank, promotionRank);
-    pieceManager.movePiece(selectedPiece, file, rank, promotionRank);
-    postMoveProcess();
-    selectedPiece.checkDefenses();
-}
 
-function promotionWindowClick(file, rank) {
-    // If click detected in promotion window area
-    console.log(`Promotion window click on ${file}, ${rank}`);
-    if (promotionWindowArea.has([file, rank])) {
-        console.log("Click in promotion window");
-        let promotionRanks = ["Queen", "Knight", "Rook", "Bishop", "Bishop", "Rook", "Knight", "Queen"];
-        let promotionRank = promotionRanks[rank];
-        promotionWindowArea.clear();
-        makeMove(selectedPiece, moveInProcess[0], moveInProcess[1], promotionRank);
-        deselectionProcess();
-        promotionWindowActive = false;
-        return;
-    }
-    return;
+function togglePieceSelect(event) {
 
-}
-
-function moveClick(file, rank) {
-
-    moveInProcess = [file, rank]
-    selectedPiece.promote(file, rank);
-    // Check if a promotion window is now active
-    if (promotionWindowActive) {
-        return;
-    }
-    makeMove(selectedPiece, file, rank, null);
-}
-
-function togglePieceSelect(file, rank) {
-    if (!selectedPiece) {
-        selectPiece(file, rank);
-        return;
-    }
-    /* If a piece is already selected check if any moves have been clicked on
-       if not then we must deselect the piece, redraw the board and pieces
-       to cover the moves we have drawn and then set the selected piece to null*/
-    else if (drawnMoves.has([file, rank])) {
-        moveClick(file, rank);
-        if (promotionWindowActive) {
-            return;
-        }
-    }
-    deselectionProcess();
-}
-
-function canvasClick(event) {
-
-    let {layerX : file, layerY : rank} = event;
-    file = Math.floor(file / pieceImgDimension);
-    rank = Math.floor((canvasDimension - rank) / pieceImgDimension);
+    let {layerX : row, layerY : col} = event;
+    row = Math.floor(row / pieceImgDimension);
+    col = Math.floor((canvasDimension - col) / pieceImgDimension);
+    console.log(`Click on row:${row}, col:${col}`);
 
     // If there is a promotion window active, clicks are first checked against this window
     if (promotionWindowActive) {
-        promotionWindowClick(file, rank);
+        if (promotionWindowArea.has([row, col])) { // If click detected in promotion window area
+            let promotionRanks = ["Queen", "Knight", "Rook", "Bishop", "Bishop", "Rook", "Knight", "Queen"];
+            let promotionRank = promotionRanks[col];
+            promotionWindowArea.clear();
+            sendMove(selectedPiece, moveInProcess[0], moveInProcess[1], promotionRank);
+            pieceManager.movePiece(selectedPiece, moveInProcess[0], moveInProcess[1], promotionRank);
+            postMoveProcess();
+            selectedPiece.checkDefenses();
+            deselectionProcess();
+            promotionWindowActive = false;
+            return;
+        }
+        else {
+            return;
+        }
+    }
+    
+    /* If a piece is already selected check if any moves have been clicked on
+       if not then we must deselect the piece, redraw the board and pieces
+       to cover the moves we have drawn and then set the selected piece to null*/
+    if (selectedPiece) {
+        let ctx = myGameArea.canvas.getContext("2d");
+        console.log(`${row}, ${col} in drawnMoves: ${drawnMoves.has([row, col])}`);
+        if (drawnMoves.has([row, col])) {
+                moveInProcess = [row, col]
+                selectedPiece.promote(row, col);
+                // Check if a promotion window is now active
+                if (promotionWindowActive) {
+                    return;
+                }
+            sendMove(selectedPiece, row, col, null);
+            pieceManager.movePiece(selectedPiece, row, col, null);
+            postMoveProcess();
+            selectedPiece.checkDefenses();
+        }
+
+        deselectionProcess();
     }
     else {
-        togglePieceSelect(file, rank);
+        selectPiece(row, col);
     }
-    return;
+}
+
+function setupPieces() {
+    for (const [i, colour] of ["White", "Black"].entries()) {
+        for (const j of Array(8).keys()) {
+            let pawn = new Pawn(colour, [j, 1 + (i * 5)], myGameArea);
+            pawn.draw();
+        }
+    }
 }
 
 function startGame() {
+    // myGamePiece = new component(30, 30, "red", 10, 120);
+    // myGamePiece.gravity = 0.05;
+    // myScore = new component("30px", "Consolas", "black", 280, 40, "text");
     myGameArea.start();
     myGameArea.drawBoard();
     myGameArea.canvas.addEventListener('click', function(Event) {canvasClick(Event)}, false);
@@ -936,10 +936,14 @@ function startGame() {
     pieceManager.drawPieces();
 }
 
+function canvasClick(event) {
+    togglePieceSelect(event);
+}
+
 let ChessSquare = class {
-    constructor(file, rank) {
-        this.file = file;
-        this.rank = rank;
+    constructor(row, col) {
+        this.row = row;
+        this.col = col;
         this._piece = null;
         this.control = {
             "White" : false,
@@ -984,10 +988,9 @@ class PieceManager {
         let piece = new pieceClass(colour, position, gameArea);
         piece.setPieceManager(this);
         this.pieces[colour].push(piece);
-        if (piece.class == "King") {
+        if (piece.rank == "King") {
             this.king[colour] = piece;
         }
-        this.squares[position[0]][position[1]].piece = piece;
         return piece;
     }
 
@@ -1003,67 +1006,68 @@ class PieceManager {
         this.pieces[colour].splice(index, 1);
     }
 
-    createPromotionWindow(file, rank) {
+    createPromotionWindow(row, col) {
         promotionWindowActive = true;
 
         let squareWidth = myGameArea.canvas.width / 8;
         let squareHeight = myGameArea.canvas.height / 8;
         let squareColour = "blue";
 
-        let drawRow = file;
-        let drawCol = rank;
+        let drawRow = row;
+        let drawCol = col;
         let pieceColour = "White";
         let drawOrder = ["Queen", "Knight", "Rook", "Bishop"]
 
-        if (rank == 0) {
+        if (col == 0) {
             drawCol += 3;
             pieceColour = "Black";
             drawOrder.reverse();
         }
 
         myGameArea.context.fillStyle = squareColour;
-        for (const [i, classType] of drawOrder.entries()) {
+        for (const [i, rank] of drawOrder.entries()) {
             myGameArea.context.fillRect(drawRow * squareWidth, (7 - drawCol + i) * squareHeight, squareWidth, squareHeight);
             myGameArea.canvas.getContext("2d").drawImage(
-                pieceImage, sx[classType], sy[pieceColour], pieceImgDimension, pieceImgDimension, drawRow * pieceImgDimension, (7 - drawCol + i) * pieceImgDimension,
+                pieceImage, sx[rank], sy[pieceColour], pieceImgDimension, pieceImgDimension, drawRow * pieceImgDimension, (7 - drawCol + i) * pieceImgDimension,
                 pieceImgDimension, pieceImgDimension);
             promotionWindowArea.add([drawRow, drawCol - i]);
         }
 
     }
 
-    movePiece(piece, file, rank, promotionRank = null) {
-        let oldRow = piece.file;
-        let oldCol = piece.rank;
+    movePiece(piece, row, col, promotionRank = null) {
+        let oldRow = piece.row;
+        let oldCol = piece.col;
         // Check for capture
-        if (this.squares[file][rank].piece) {
-            this.capturePiece(this.squares[file][rank].piece);
+        if (this.squares[row][col].piece) {
+            this.capturePiece(this.squares[row][col].piece);
         }
         // Check for enPassant capture
-        if (piece.colour == "White" && piece.class == "Pawn" && [file, rank].equals(enpassantCapture)){
-            this.capturePiece(this.squares[file][rank - 1].piece);
+        if (piece.colour == "White" && piece.rank == "Pawn" && [row, col].equals(enpassantCapture)){
+            this.capturePiece(this.squares[row][col - 1].piece);
         }
-        else if (piece.colour == "Black" && piece.class == "Pawn" && [file, rank].equals(enpassantCapture)){
-            this.capturePiece(this.squares[file][rank + 1].piece);
+        else if (piece.colour == "Black" && piece.rank == "Pawn" && [row, col].equals(enpassantCapture)){
+            this.capturePiece(this.squares[row][col + 1].piece);
         }
 
         enpassantCapture = null;
 
-        this.squares[file][rank].piece = piece;
+        this.squares[row][col].piece = piece;
         this.squares[oldRow][oldCol].piece = null;
-        piece.position = [file, rank];
+        piece.position = [row, col];
         piece.has_moved = true;
 
         // Handle promotions
         if (promotionRank) {
-             let classLookup = {
+             let rankLookup = {
                 "Queen" : Queen,
                 "Knight" : Knight,
                 "Rook" : Rook,
                 "Bishop" : Bishop
              };
-             let promotedPiece = this.createPiece(classLookup[promotionRank], piece.colour, [file, rank], myGameArea);
+             let promotedPiece = this.createPiece(rankLookup[promotionRank], piece.colour, [row, col], myGameArea);
              promotedPiece.has_moved = true;
+             this.squares[row][col].piece = promotedPiece;
 
              // Remove old piece (not in capture as doesnt count for tracking purposes)
              let index = this.pieces[piece.colour].indexOf(piece);
@@ -1072,33 +1076,33 @@ class PieceManager {
         }
 
         // Check for castling here
-        if (piece.class == "King" && Math.abs(file - oldRow) == 2) {
-            if(file - oldRow == 2) {
-                let rightRook = this.squares[7][rank].piece;
-                this.movePiece(rightRook, 5, rank);
+        if (piece.rank == "King" && Math.abs(row - oldRow) == 2) {
+            if(row - oldRow == 2) {
+                let rightRook = this.squares[7][col].piece;
+                this.movePiece(rightRook, 5, col);
             }
             else {
-                let leftRook = this.squares[0][rank].piece;
-                this.movePiece(leftRook, 3, rank);
+                let leftRook = this.squares[0][col].piece;
+                this.movePiece(leftRook, 3, col);
             }
         }
 
         // Check for en passant here
-        if (piece.class == "Pawn" && Math.abs(rank - oldCol) == 2) {
+        if (piece.rank == "Pawn" && Math.abs(col - oldCol) == 2) {
             // Check is piece to the right is a pawn
-            if (file + 1 <= 7 && this.squares[file + 1][rank].piece && this.squares[file + 1][rank].piece.class == "Pawn") {
-                enpassantStack.push(this.squares[file + 1][rank].piece);
+            if (row + 1 <= 7 && this.squares[row + 1][col].piece && this.squares[row + 1][col].piece.rank == "Pawn") {
+                enpassantStack.push(this.squares[row + 1][col].piece);
             }
             // Check if piece to the right is a pawn
-            if (file - 1 >= 0 && this.squares[file - 1][rank].piece && this.squares[file - 1][rank].piece.class == "Pawn") {
-                enpassantStack.push(this.squares[file - 1][rank].piece);
+            if (row - 1 >= 0 && this.squares[row - 1][col].piece && this.squares[row - 1][col].piece.rank == "Pawn") {
+                enpassantStack.push(this.squares[row - 1][col].piece);
             }
 
             if (piece.colour == "White") {
-                enpassantCapture = [file, rank - 1];
+                enpassantCapture = [row, col - 1];
             }
             else {
-                enpassantCapture = [file, rank + 1];
+                enpassantCapture = [row, col + 1];
             }
         }
     }
@@ -1106,7 +1110,7 @@ class PieceManager {
     checkmateCalculator(colour) {
         let validMoves = [];
         this.pieces[colour].forEach(piece => {
-            let [moves, captures, ...rest] = piece.calculateMoves();
+            let [moves, captures, defending] = piece.calculateMoves();
             validMoves = validMoves.concat(moves, captures);
         })
 
@@ -1131,35 +1135,56 @@ class ChessBoard {
         for (const j of Array(8).keys()) {
             this.squares.push(Array.from({length: 8}, (_, i) => 0));
         }
-        for (let file = 0; file < 8; file++) {
-            for (let rank = 0; rank < 8; rank++) {
-                this.squares[file][rank] = new ChessSquare(file, rank);
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                this.squares[row][col] = new ChessSquare(row, col);
             }
         }
     }
 
     setupPieces() {
-        parseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        for (const [col, colour] of ["White", "Black"].entries()) {
+            for (const row of Array(8).keys()) {
+                let pawn = this.pieceManager.createPiece(Pawn, colour, [row, 1 + (col * 5)], this.gameArea);
+                this.squares[row][1 + (col * 5)].piece = pawn;
+            }
+
+            for (const [row, rank] of [Rook, Knight, Bishop].entries()) {
+                let piece;
+
+                piece = this.pieceManager.createPiece(rank, colour, [row, col * 7], this.gameArea);
+                this.squares[row][col * 7].piece = piece;
+
+                piece = this.pieceManager.createPiece(rank, colour, [7 - row, col * 7], this.gameArea);
+                this.squares[7 - row][col * 7].piece = piece;
+            }
+
+            let queen = this.pieceManager.createPiece(Queen, colour, [3, col * 7], this.gameArea);
+            this.squares[3][col * 7].piece = queen;
+
+            let king = this.pieceManager.createPiece(King, colour, [4, col * 7], this.gameArea);
+            this.squares[4][col * 7].piece = king;
+        }
     }
 
-    getSquare(file, rank) {
-        return this.squares[file][rank];
+    getSquare(row, col) {
+        return this.squares[row][col];
     }
 
     evaluateSquareControl(colour) {
         // Mark the squares controlled by the given colour
 
         // Reset square control for colour
-        for (let file = 0; file < 8; file++) {
-            for (let rank = 0; rank < 8; rank++) {
-                this.squares[file][rank].control[colour] = false;
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                this.squares[row][col].control[colour] = false;
             }
         }
 
         this.pieceManager.pieces[colour].forEach(piece => {
             for (let i = 0; i < 8; i++) {
                 let moveArray;
-                if(piece.class == "King") {
+                if(piece.rank == "King") {
                     moveArray = [];
                     piece.moves.forEach(move =>  {
                         let position = [piece.position[0] + move[0], piece.position[1] + move[1]];
@@ -1171,11 +1196,8 @@ class ChessBoard {
                 }
                 else {
                     let [moves, captures, defending] = piece.calculateMoves();
-                    // piece.moveCache = [];
-                    // piece.moveCache.concat(moves);
-                    // piece.moveCache.concat(captures);
                     moveArray = [];
-                    if (piece.class != "Pawn") {
+                    if (piece.rank != "Pawn") {
                         moveArray = moveArray.concat(moves);
                     }
                     moveArray = moveArray.concat(captures);
@@ -1190,70 +1212,187 @@ class ChessBoard {
 
 }
 
+// function component(width, height, color, x, y, type) {
+//     this.type = type;
+//     this.score = 0;
+//     this.width = width;
+//     this.height = height;
+//     this.speedX = 0;
+//     this.speedY = 0;    
+//     this.x = x;
+//     this.y = y;
+//     this.gravity = 0;
+//     this.gravitySpeed = 0;
+//     this.update = function() {
+//         ctx = myGameArea.context;
+//         if (this.type == "text") {
+//             ctx.font = this.width + " " + this.height;
+//             ctx.fillStyle = color;
+//             ctx.fillText(this.text, this.x, this.y);
+//         } else {
+//             ctx.fillStyle = color;
+//             ctx.fillRect(this.x, this.y, this.width, this.height);
+//         }
+//     }
+//     this.newPos = function() {
+//         this.gravitySpeed += this.gravity;
+//         this.x += this.speedX;
+//         this.y += this.speedY + this.gravitySpeed;
+//         this.hitBottom();
+//     }
+//     this.hitBottom = function() {
+//         var rockbottom = myGameArea.canvas.height - this.height;
+//         if (this.y > rockbottom) {
+//             this.y = rockbottom;
+//             this.gravitySpeed = 0;
+//         }
+//     }
+//     this.crashWith = function(otherobj) {
+//         var myleft = this.x;
+//         var myright = this.x + (this.width);
+//         var mytop = this.y;
+//         var mybottom = this.y + (this.height);
+//         var otherleft = otherobj.x;
+//         var otherright = otherobj.x + (otherobj.width);
+//         var othertop = otherobj.y;
+//         var otherbottom = otherobj.y + (otherobj.height);
+//         var crash = true;
+//         if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright)) {
+//             crash = false;
+//         }
+//         return crash;
+//     }
+// }
+
+// function updateGameArea() {
+//     var x, height, gap, minHeight, maxHeight, minGap, maxGap;
+//     for (i = 0; i < myObstacles.length; i += 1) {
+//         if (myGamePiece.crashWith(myObstacles[i])) {
+//             return;
+//         } 
+//     }
+//     myGameArea.clear();
+//     myGameArea.frameNo += 1;
+//     if (myGameArea.frameNo == 1 || everyinterval(150)) {
+//         x = myGameArea.canvas.width;
+//         minHeight = 20;
+//         maxHeight = 200;
+//         height = Math.floor(Math.random()*(maxHeight-minHeight+1)+minHeight);
+//         minGap = 50;
+//         maxGap = 200;
+//         gap = Math.floor(Math.random()*(maxGap-minGap+1)+minGap);
+//         myObstacles.push(new component(10, height, "green", x, 0));
+//         myObstacles.push(new component(10, x - height - gap, "green", x, height + gap));
+//     }
+//     for (i = 0; i < myObstacles.length; i += 1) {
+//         myObstacles[i].x += -1;
+//         myObstacles[i].update();
+//     }
+//     myScore.text="SCORE: " + myGameArea.frameNo;
+//     myScore.update();
+//     myGamePiece.newPos();
+//     myGamePiece.update();
+// }
+
+// function everyinterval(n) {
+//     if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+//     return false;
+// }
+
+// function accelerate(n) {
+//     myGamePiece.gravity = n;
+// }
+
+function sendJSON2(){
+              
+    let move = document.querySelector('#move');
+      
+    // Creating a XHR object
+    let xhr = new XMLHttpRequest();
+    let url = "/play/move_handler";
+
+    // open a connection
+    xhr.open("POST", url, true);
+
+    // Set the request header i.e. which type of content you are sending
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    // Create a state change callback
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+
+            // Print received data from server
+            result.innerHTML = this.responseText;
+
+        }
+    };
+
+    // Converting JSON data to string
+    var data = JSON.stringify({ "move": move.value });
+
+    // Sending data with the request
+    xhr.send(data);
+}
+
 function sendJSON(){
     let move = document.querySelector('#move');
     socket.emit('move', {'move' : move.value, 'room' : room});
+}   
+
+function getMatchFromQueue(){
+    let url = '/play/request_match_from_queue'
+
+    console.log("Requesting match");
+    fetch(url).then(response => response.json()).then(data => {
+        if (data["match_found"] == true) {
+            let url = data["match_url"];
+            console.log(url);
+            window.location.href = url;
+        }
+    });
 }
 
-function parseFEN(fen) {
-    let pieces = [];
-    let rankMap = {
-        "p" : Pawn,
-        "k" : King,
-        "q" : Queen,
-        "r" : Rook,
-        "n" : Knight,
-        "b" : Bishop
-    };
-    let [placement, active, castling, enpassant, halfMove, fullMove] = fen.split(" ");
+function addClientToQueue(){
+    let url = "/play/queue_handler";
 
-    let file;
-    let rank;
-    let index = 0;
+    var data = JSON.stringify({"queue" : "add" });
 
-    for (let i = 0; i < placement.length; i++) {
-        char = fen[i];
-        if (char == "/") {
-            //Skip
-            continue
-        }
-        else if (Number(char)) {
-            // Empty spaces
-            pieces.concat(Array(Number(char)).fill(null));
-            index += Number(char);
-        }
-        else {
-            let colour = "Black";
-            if (char == char.toUpperCase()) {
-                colour = "White";
-            }
-            file = index % 8;
-            rank = 7 - Math.floor(index / 8);
-            let piece = pieceManager.createPiece(rankMap[char.toLowerCase()], colour, [file, rank], myGameArea);
-            index += 1;
-        }
-    }
+    fetch(url, {
+        "method" : "POST",
+        "headers" : {"Content-Type" : "application/json"},
+        "body" : JSON.stringify(data)
+    })
+    .then(document.getElementById("queue-btn").innerHTML = "Leave Queue")
+    .then(queued = true);
 
-    if (active == "w") {
-        turn = "White";
-    }
-    else {
-        turn = "Black";
-    }
-
-    let castleMap = {
-        "K" : [0, 7],
-        "Q" : [0, 0],
-        "k" : [7, 7],
-        "q" : [0, 7]
-    };
-
-    for (let i = 0; i < castling.length; i++) {
-    }
-
+    setInterval(getMatchFromQueue, 1000);
 
 }
 
-function generateFEN() {
+function removeClientFromQueue(){
+    // Check if queued as we call this function on unload
+    if (queued == false){
+        return;
+    }
+    let url = "/play/queue_handler";
 
+    var data = JSON.stringify({"queue" : "remove" });
+
+    fetch(url, {
+        "method" : "POST",
+        "headers" : {"Content-Type" : "application/json"},
+        "body" : JSON.stringify(data)
+    })
+    .then(document.getElementById("queue-btn").innerHTML = "Join Queue")
+    .then(queued = false);
+
+    clearInterval(getMatchFromQueue);
+}
+
+function toggleQueue(){
+    if (queued == false){
+        addClientToQueue();
+        return;
+    }
+    removeClientFromQueue();
 }
