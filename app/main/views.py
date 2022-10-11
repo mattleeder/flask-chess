@@ -134,6 +134,9 @@ def socket_join(data):
     room = data["match_id"]
     join_room(room)
     send(username + " has joined the match", to = room)
+    match = LiveMatch.query.filter_by(game_id = room).first()
+    print(f"Sending fen: {match.fen}")
+    emit("server_response", {"fen" : match.fen}, to = request.sid)
 
 @socketio.on('leave')
 @login_required
@@ -150,7 +153,14 @@ def socket_move(json):
     print(json)
     json = JSON.loads(json)
     room = json["room"]
-    emit('server_response', {'move' : json["move"], 'piece' : json["piece"], 'promotionRank' : json['promotionRank'], 'turn' : json['turn']}, to=room, broadcast = True, include_self = False)
+    fen = json["fen"]
+    matches = LiveMatch.query.filter_by(game_id = room).all()
+    for match in matches:
+        match.fen = fen
+    db.session.commit()
+    print(fen)
+    emit('server_response', {'fen' : json['fen']}, to=room, broadcast = True, include_self = False)
+    # emit('server_response', {'move' : json["move"], 'piece' : json["piece"], 'promotionRank' : json['promotionRank'], 'turn' : json['turn'], 'fen' : json['fen']}, to=room, broadcast = True, include_self = False)
     
 
 def setup_match():

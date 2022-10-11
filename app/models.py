@@ -41,6 +41,7 @@ class LiveMatch(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     game_id = db.Column(db.String(16), nullable = True)
     colour = db.Column(db.Integer)
+    fen = db.Column(db.String(128), default = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
 @login_manager.user_loader
 def load_user(user_id):

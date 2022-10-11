@@ -11,10 +11,10 @@
 {{ super() }}
 
 
-<div class="container">
-    <div class="row align-items-start">
+<div class="container-fluid py-2 text-left">
+    <div class="row justify-content-start">
         <div class="col-2">
-            <div class="container">
+            <div class="container-fluid text-left">
                 <ul class="nav nav-tabs flex-column">
                   {% if request.path == url_for('account.account_info') %}
                     <li class="nav-item">
@@ -52,7 +52,7 @@
                   </ul>
             </div>
         </div>
-        <div class="col">
+        <div class="col-3">
             {% block subcontent %}
             {% endblock %}
         </div>

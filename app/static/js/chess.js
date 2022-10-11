@@ -315,7 +315,7 @@ class Piece {
                         validMoves.push(move);
                     }
                     // Check if enpassant can be used to capture attacker
-                    else if(attacker.class == "Pawn" && enpassantCapture && enpassantCapture.equals([attacker.position[0], attacker.position[1] + this.moves[0][1]])) {
+                    else if(attacker && attacker.class == "Pawn" && enpassantCapture && enpassantCapture.equals([attacker.position[0], attacker.position[1] + this.moves[0][1]])) {
                         if (!(validMoves.contains([enpassantCapture]))) {
                             validMoves.push(enpassantCapture);
                         }
@@ -623,48 +623,74 @@ class King extends Piece {
 
         // Left rook
         let leftRookPosition = [this.position[0] - 4, this.position[1]];
-        let leftRook = this.pieceManager.squares[leftRookPosition[0]][leftRookPosition[1]].piece;
+        if (Math.max(...leftRookPosition) > 7 || Math.min(...leftRookPosition) < 0) {
 
-        let leftRookCanCastle = true;
-
-        if (leftRook && !(leftRook.has_moved)) {
-            for (let j = 1; j < 4; j++) {
-                let square = this.pieceManager.squares[this.position[0] - j][this.position[1]];
-                // If piece in the way or moving through check, cannot castle
-                if (square.piece || square.control[enemyColour]) {
-                    leftRookCanCastle = false;
-                    break;
-                }
-            }
         }
         else {
-            leftRookCanCastle = false;
+            let leftRookCanCastle = true;
+            if (this.pieceManager.squares[leftRookPosition[0]][leftRookPosition[1]].piece && this.pieceManager.squares[leftRookPosition[0]][leftRookPosition[1]].piece.class == "Rook") {
+                let leftRook = this.pieceManager.squares[leftRookPosition[0]][leftRookPosition[1]].piece;
+        
+                if (leftRook && !(leftRook.has_moved)) {
+                    for (let j = 1; j < 4; j++) {
+                        let square = this.pieceManager.squares[this.position[0] - j][this.position[1]];
+                        // If piece in the way or moving through check, cannot castle
+                        if (square.piece || square.control[enemyColour]) {
+                            leftRookCanCastle = false;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    leftRookCanCastle = false;
+                }
+            }
+
+            else {
+                leftRookCanCastle = false;
+            }
+
+            if (leftRookCanCastle) {
+                moves.push([this.position[0] - 2, this.position[1]]);
+            }
         }
-        if (leftRookCanCastle) {
-            moves.push([this.position[0] - 2, this.position[1]]);
-        }
+            
+        
 
         // Right rook
         let rightRookPosition = [this.position[0] + 3, this.position[1]];
-        let rightRook = this.pieceManager.squares[rightRookPosition[0]][rightRookPosition[1]].piece;
+        if (Math.max(...rightRookPosition) > 7 || Math.min(...rightRookPosition) < 0) {
 
-        let rightRookCanCastle = true;
-
-        if (rightRook && !(rightRook.has_moved)) {
-            for (let j = 1; j < 3; j++) {
-                let square = this.pieceManager.squares[this.position[0] + j][this.position[1]];
-                // If piece in the way or moving through check, cannot castle
-                if (square.piece || square.control[enemyColour]) {
-                    rightRookCanCastle = false;
-                    break;
-                }
-            }
         }
         else {
-            rightRookCanCastle = false;
-        }
-        if (rightRookCanCastle) {
-            moves.push([this.position[0] + 2, this.position[1]]);
+            console.log(`Right rook position ${rightRookPosition}`);
+            let rightRookCanCastle = true;
+            if (this.pieceManager.squares[rightRookPosition[0]][rightRookPosition[1]].piece && this.pieceManager.squares[rightRookPosition[0]][rightRookPosition[1]].piece.class == "Rook") {
+                let rightRook = this.pieceManager.squares[rightRookPosition[0]][rightRookPosition[1]].piece;
+    
+                if (rightRook && !(rightRook.has_moved)) {
+                    for (let j = 1; j < 3; j++) {
+                        let square = this.pieceManager.squares[this.position[0] + j][this.position[1]];
+                        // If piece in the way or moving through check, cannot castle
+                        if (square.piece || square.control[enemyColour]) {
+                            rightRookCanCastle = false;
+                            break;
+                        }
+                    }
+                }
+    
+                else {
+                    rightRookCanCastle = false;
+                }
+            }
+    
+            else {
+                rightRookCanCastle = false;
+            }
+    
+            if (rightRookCanCastle) {
+                moves.push([this.position[0] + 2, this.position[1]]);
+            }
         }
 
         return [moves, captures, defending]
@@ -818,29 +844,44 @@ function selectPiece(file, rank) {
 function sendMove(selectedPiece, file, rank, promotionRank) {
     // Send move to websocket
     console.log("Sending move");
+    console.log(`Sending FEN ${generateFEN()}`);
     socket.emit('move', JSON.stringify({'piece' : [selectedPiece.file, selectedPiece.rank],
-        'move' : [file, rank], 'turn' : turnGenSend.next().value, 'promotionRank' : promotionRank, 'room' : room}));
+        'move' : [file, rank], 'turn' : turnGenSend.next().value, 'promotionRank' : promotionRank, 'room' : room, 'fen' : generateFEN()}));
 }
 
 function receivedMove(data) {
     // Parses data
     let {
-        "piece" : [oldRow, oldCol],
-        "move" : [file, rank],
-        "promotionRank": promotionRank,
-        "turn" : nextTurn
+        // "piece" : [oldRow, oldCol],
+        // "move" : [file, rank],
+        // "promotionRank": promotionRank,
+        // "turn" : nextTurn,
+        "fen" : fen
     } = data;
 
 
-    let piece = board.squares[oldRow][oldCol].piece;
-    console.log(`Received move from server, moving ${piece.str()} to ${file}, ${rank}`)
-    pieceManager.movePiece(piece, file, rank, promotionRank);
+    // let piece = board.squares[oldRow][oldCol].piece;
+    // console.log(`Received move from server, moving ${piece.str()} to ${file}, ${rank}`)
+    // pieceManager.movePiece(piece, file, rank, promotionRank);
+    console.log(`Calling parseFEN with ${fen}`);
+    pieceManager.clearAllPieces();
+    parseFEN(fen);
     deselectionProcess();
     attackingKing["White"].clear();
     attackingKing["Black"].clear();
-    board.evaluateSquareControl(turn);
-    turn = nextTurn;
-    piece.checkDefenses();
+    let evalColour = "White"
+    if (turn == "White") {
+        evalColour = "Black";
+    }
+    board.evaluateSquareControl(evalColour);
+    pieceManager.king[evalColour].checkDefenses();
+    // board.evaluateSquareControl("White");
+    // board.evaluateSquareControl("Black");
+    // pieceManager.king["Black"].checkDefenses();
+    // pieceManager.king["White"].checkDefenses();
+    // console.log(`Turn changing to ${turn}`);
+    // turn = nextTurn;
+    // piece.checkDefenses();
 }
 
 function deselectionProcess() {
@@ -858,10 +899,10 @@ function postMoveProcess() {
 }
 
 function makeMove(selectedPiece, file, rank, promotionRank) {
-    sendMove(selectedPiece, file, rank, promotionRank);
     pieceManager.movePiece(selectedPiece, file, rank, promotionRank);
     postMoveProcess();
     selectedPiece.checkDefenses();
+    sendMove(selectedPiece, file, rank, promotionRank);
 }
 
 function promotionWindowClick(file, rank) {
@@ -980,8 +1021,8 @@ class PieceManager {
         this.squares = squares;
     }
 
-    createPiece(pieceClass, colour, position, gameArea) {
-        let piece = new pieceClass(colour, position, gameArea);
+    createPiece(pieceClass, colour, position, gameArea, hasMoved = false) {
+        let piece = new pieceClass(colour, position, gameArea, hasMoved);
         piece.setPieceManager(this);
         this.pieces[colour].push(piece);
         if (piece.class == "King") {
@@ -996,6 +1037,7 @@ class PieceManager {
     }
 
     capturePiece(piece) {
+
         let colour = piece.colour;
         let index = this.pieces[colour].indexOf(piece);
 
@@ -1030,6 +1072,20 @@ class PieceManager {
             promotionWindowArea.add([drawRow, drawCol - i]);
         }
 
+    }
+
+    clearAllPieces() {
+        this.pieces["Black"] = [];
+        this.pieces["White"] = [];
+        this.capturePiece(this.king["Black"]);
+        this.capturePiece(this.king["White"]);
+        console.log(`Num Black pieces: ${this.pieces["Black"].length}`);
+        console.log(`Num White pieces: ${this.pieces["White"].length}`);
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                this.squares[j][7 - i].remove();
+            }
+        }
     }
 
     movePiece(piece, file, rank, promotionRank = null) {
@@ -1089,7 +1145,7 @@ class PieceManager {
             if (file + 1 <= 7 && this.squares[file + 1][rank].piece && this.squares[file + 1][rank].piece.class == "Pawn") {
                 enpassantStack.push(this.squares[file + 1][rank].piece);
             }
-            // Check if piece to the right is a pawn
+            // Check if piece to the left is a pawn
             if (file - 1 >= 0 && this.squares[file - 1][rank].piece && this.squares[file - 1][rank].piece.class == "Pawn") {
                 enpassantStack.push(this.squares[file - 1][rank].piece);
             }
@@ -1140,6 +1196,7 @@ class ChessBoard {
 
     setupPieces() {
         parseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        //parseFEN("r1bqkbnr/ppppp1pp/2n5/4Pp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 1");
     }
 
     getSquare(file, rank) {
@@ -1229,31 +1286,175 @@ function parseFEN(fen) {
             }
             file = index % 8;
             rank = 7 - Math.floor(index / 8);
-            let piece = pieceManager.createPiece(rankMap[char.toLowerCase()], colour, [file, rank], myGameArea);
+            let hasMoved = false;
+            if (char.toLowerCase() == "p" && ((colour == "White" && rank != 1) || (colour == "Black" && rank != 6))) {
+                console.log(`Pawn at ${file} ${rank} has moved`);
+                hasMoved = true;
+            }
+            if (char.toLowerCase() == "r") {
+                hasMoved = true;
+            }
+            let piece = pieceManager.createPiece(rankMap[char.toLowerCase()], colour, [file, rank], myGameArea, hasMoved);
             index += 1;
         }
     }
+    console.log(`Active ${active}`);
 
     if (active == "w") {
+        console.log("Making turn White");
         turn = "White";
     }
     else {
+        console.log("Making turn Black");
         turn = "Black";
     }
 
     let castleMap = {
-        "K" : [0, 7],
+        "K" : [7, 0],
         "Q" : [0, 0],
         "k" : [7, 7],
         "q" : [0, 7]
     };
 
     for (let i = 0; i < castling.length; i++) {
+        if (castling[i] == "-") {
+            break;
+        }
+        let [r, c] = castleMap[castling[i]];
+        if (pieceManager.squares[r][c].piece) {
+            pieceManager.squares[r][c].piece.has_moved = false;
+        }
     }
+
+    let fileMap = {
+        "a" : 0,
+        "b" : 1,
+        "c" : 2,
+        "d" : 3,
+        "e" : 4,
+        "f" : 5,
+        "g" : 6,
+        "h" : 7
+    };
+
+    if (enpassant == "-") {
+        enpassantCapture = null;
+    }
+    else {
+        enpassantCapture = [fileMap[enpassant[0]], parseInt(enpassant[1]) - 1];
+    }
+
 
 
 }
 
 function generateFEN() {
 
+    let FEN = "";
+
+    let rankMap = {
+        "Pawn" : "p",
+        "King" : "k",
+        "Queen" : "q",
+        "Rook" : "r",
+        "Knight" : "n",
+        "Bishop" : "b"
+    };
+
+    let turnMap = {
+        "White" : "w",
+        "Black" : "b"
+    }
+
+    let fileMap = {
+        0 : "a",
+        1 : "b",
+        2 : "c",
+        3 : "d",
+        4 : "e",
+        5 : "f",
+        6 : "g",
+        7 : "h"
+    }
+
+    for (let i = 0; i < 8; i++) {
+        let blank = 0;
+        for (let j = 0; j < 8; j++) {
+            p = pieceManager.squares[j][7 - i].piece;
+
+            if (!p) {
+                blank += 1;
+                continue;
+            }
+
+            else {
+                if (blank > 0) {
+                    FEN += blank.toString();
+                    blank = 0;
+                }
+                let rank = rankMap[p.class];
+                if (p.colour  == "White") {
+                    rank = rank.toUpperCase();
+                }
+                FEN += rank;
+            }
+        }
+        if (blank > 0) {
+            FEN += blank.toString();
+        }
+        if (i < 7) {
+            FEN += "/";
+        }
+    }
+
+    FEN += " ";
+    FEN += turnMap[turn];
+    FEN += " ";
+
+    let castling = "";
+
+    if (!pieceManager.king["White"].has_moved) {
+        if (pieceManager.squares[7][0].piece && !pieceManager.squares[7][0].piece.has_moved) {
+            castling += "K";
+        }
+        if (pieceManager.squares[0][0].piece && !pieceManager.squares[0][0].piece.has_moved) {
+            castling += "Q";
+        }
+    }
+
+    if (!pieceManager.king["Black"].has_moved) {
+        if (pieceManager.squares[7][7].piece && !pieceManager.squares[7][7].piece.has_moved) {
+            castling += "k";
+        }
+        if (pieceManager.squares[0][7].piece && !pieceManager.squares[0][7].piece.has_moved) {
+            castling += "q";
+        }
+    }
+
+    if (castling) {
+        FEN += castling;
+    }
+    else {
+        FEN += "-";
+    }
+
+    FEN += " ";
+
+    let enpassant;
+
+    if (enpassantCapture !== null) {
+        enpassant = fileMap[enpassantCapture[0]];
+        enpassant += (enpassantCapture[1] + 1).toString();
+    }
+    else {
+        enpassant = "-"
+    }
+
+    FEN += enpassant;
+    
+    
+
+    
+
+    return FEN;
 }
