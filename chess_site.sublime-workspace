@@ -1,0 +1,206 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"room",
+				"room_list"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/E/Programming Projects/Chess 2/pieces.py",
+		"/E/Programming Projects/Chess 3/.git/COMMIT_EDITMSG",
+		"/E/Programming Projects/Flask Book/flasky/.git/COMMIT_EDITMSG",
+		"/E/Programming Projects/pip update all.py",
+		"/E/Programming Projects/Chess Site/.git/COMMIT_EDITMSG",
+		"/E/Python/Predicting AUS weather V2/weather_module.py",
+		"/E/Programming Projects/Git Is Simpler/.git/COMMIT_EDITMSG",
+		"/E/Programming Projects/Chess/Program/pieces.py",
+		"/E/Programming Projects/Git Is Simpler/file3.py",
+		"/E/Programming Projects/Git Is Simpler/file5.py",
+		"/E/Downloads/python-for-excel-1st-edition/python-for-excel-1st-edition/udfs/describe/describe.py",
+		"/E/Programming Projects/Git Is Simpler/.git/MERGE_MSG",
+		"/E/Programming Projects/Flask Book/flasky/hello.py",
+		"/E/Programming Projects/Chess/Program/pieces_old.py",
+		"/E/Programming Projects/BARK/bark.py",
+		"/E/Programming Projects/OOP Book/Shapes/main.py",
+		"/E/Programming Projects/CSGODashboard/.git/COMMIT_EDITMSG",
+		"/E/Programming Projects/BARK/commands.py",
+		"/E/Programming Projects/OOP Book/demo.py",
+		"/E/Programming Projects/CSGODashboard/setup.py",
+		"/E/Programming Projects/hello/standardplot.py",
+		"/E/Programming Projects/hello/hello.py",
+		"/E/Programming Projects/argtest.py",
+		"/C/Users/Matt/Envs/data/Lib/site-packages/sklearn/decomposition/incremental_pca.py",
+		"/C/Users/Matt/Desktop/market_tables.py",
+		"/E/Python/A3/Week 4/solution.py",
+		"/C/Users/Matt/Envs/tensflow/Lib/site-packages/tensorflow/python/compiler/xla/jit.py",
+		"/C/Users/Matt/Documents/SSD Desktop/Desktop/simple_market_prices.py",
+		"/E/Python/A3/Week 4/test_solution.py",
+		"/E/Programming Projects/Hotkey/hotkey_trainer.py",
+		"/E/Python/Experiments/bisect_demo.py",
+		"/E/Python/A3/Week 3/solution.py",
+		"/E/Python/A3/Week 3/test_solution.py",
+		"/E/Python/A3/Week 2/solution.py",
+		"/E/Python/A3/Week 2/test_solution.py",
+		"/E/Python/A3/Week 1/solution.py",
+		"/E/Python/A3/Week 1/test_solution.py",
+		"/C/Users/Matt/Desktop/simple_market_prices.py"
+	],
+	"find":
+	{
+		"height": 27.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 27.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "chess_site.sublime-project",
+	"replace":
+	{
+		"height": 50.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

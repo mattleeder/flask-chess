@@ -1,12 +1,11 @@
 from flask_login import current_user, login_required
 from . import main
 from flask import redirect, render_template, Blueprint, url_for, request
-from ..models import LiveMatch, User, Queue
+from ..models import LiveMatch, User, Queue, db_instance
 from .. import db, socketio
 import json as JSON
 import random
 from string import ascii_letters, digits
-from sqlalchemy import func
 from flask_socketio import send, emit, join_room, leave_room
 
 def generate_match_id():
@@ -20,14 +19,18 @@ def home():
     return render_template('main/home.html')
 
 @main.route('/play/match/<game_id>', methods=['GET', 'POST'])
-def match(game_id, colour="Spectator"):
-    player = LiveMatch.query.filter_by(id = current_user.id).first()
-    if player:
-        colours = ["White", "Black"]
-        colour_index = player.colour
-        colour = colours[colour_index]
-        print(colour)
-    return render_template('main/match.html', game_id=game_id, colour = colour)
+def match(game_id):
+    """
+    Serves match page to user. If user is not in match they can view as spectator.
+    """
+    live_match = LiveMatch.query.filter_by(game_id = game_id).first()
+    if str(current_user.id) == live_match.white:
+        db_instance.remove_player_from_queue(current_user.id)
+        return render_template('main/match.html', game_id = game_id, colour = "White")
+    elif str(current_user.id) == live_match.black:
+        db_instance.remove_player_from_queue(current_user.id)
+        return render_template('main/match.html', game_id = game_id, colour = "Black")
+    return render_template('main/match.html', game_id=game_id, colour = "Spectator")
 
 @main.route('/play', methods=['GET', 'POST'])
 @login_required
@@ -58,12 +61,9 @@ def queue_handler():
     user_id = current_user.id
     command = data["queue"]
     if command == "add":
-        queue = Queue(id=user_id)
-        db.session.add(queue)
-        db.session.commit()
+        db_instance.add_player_to_queue(user_id)
     if command == "remove":
-        queue = Queue.query.filter_by(id=user_id).delete()
-        db.session.commit()
+        db_instance.remove_player_from_queue(user_id)
     return data
 
 def pair_players_in_queue():
@@ -72,15 +72,12 @@ def pair_players_in_queue():
 @main.route('/play/request_match_from_queue', methods=['GET', 'POST'])
 @login_required
 def match_from_queue():
-    pair_players_in_queue()
 
-    colours = ["White", "Black"]
     # Check if already assigned match
     match = Queue.query.filter_by(id=current_user.id).first()
     match_id = None
     if match:
         match_id = match.game_id
-        colour_index = match.colour
 
     elif Queue.query.count() <= 1:
         return {
@@ -90,30 +87,19 @@ def match_from_queue():
     if not match_id:
         match_id = generate_match_id()
         colour_index = random.randint(0, 1) # 0 is White 1 is Black
-        opp_index = [1, 0]
 
         # Get an opponent
-        opp = Queue.query.filter(Queue.id != current_user.id, Queue.game_id == None).first()
+        opp = db_instance.find_opponent(current_user.id)
 
         if not opp:
             return {
             "match_found" : False,
-        }
-        opp.game_id = match_id
-        opp.colour = opp_index[colour_index]
-        match.game_id = match_id
-        match.colour = colour_index
+            }
 
-        db.session.add(match)
-        db.session.add(opp)
-        db.session.commit()
+        white = [current_user.id, opp][colour_index]
+        black = [current_user.id, opp][(colour_index + 1) % 2]
 
-        player1 = LiveMatch(id=match.id, game_id=match.game_id, colour=match.colour)
-        player2 = LiveMatch(id=opp.id, game_id=opp.game_id, colour=opp.colour)
-
-        db.session.add(player1)
-        db.session.add(player2)
-        db.session.commit()
+        db_instance.create_new_live_match(match_id, white, black)
 
     print(match_id)
     print(url_for('main.match', game_id=match_id))
@@ -154,14 +140,7 @@ def socket_move(json):
     json = JSON.loads(json)
     room = json["room"]
     fen = json["fen"]
-    matches = LiveMatch.query.filter_by(game_id = room).all()
-    for match in matches:
-        match.fen = fen
-    db.session.commit()
+    db_instance.update_match(fen, room)
+    db_instance.add_move(fen, room)
     print(fen)
     emit('server_response', {'fen' : json['fen']}, to=room, broadcast = True, include_self = False)
-    # emit('server_response', {'move' : json["move"], 'piece' : json["piece"], 'promotionRank' : json['promotionRank'], 'turn' : json['turn'], 'fen' : json['fen']}, to=room, broadcast = True, include_self = False)
-    
-
-def setup_match():
-    pass

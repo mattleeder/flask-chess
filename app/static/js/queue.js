@@ -1,83 +1,61 @@
-var queued = false;
-var matchFromQueueInterval;
+let queued = false;
+let matchFromQueueInterval;
 
-const evtSource = new EventSource('/play/request_match_from_queue')
+const evtSource = new EventSource("/play/request_match_from_queue");
 
-function sendJSON(){
-    let move = document.querySelector('#move');
-    let url = "/play/move_handler";
+function getMatchFromQueue() {
+  const url = "/play/request_match_from_queue";
 
-    var data = JSON.stringify({ "move" : move.value });
-
-    fetch(url, {
-        "method" : "POST",
-        "headers" : {"Content-Type" : "application/json"},
-        "body" : JSON.stringify(data)
-    });
+  console.log("Requesting match");
+  fetch(url).then((response) => response.json()).then((data) => {
+    if (data["match_found"] == true) {
+      const url = data["match_url"];
+      console.log(url);
+      window.location.href = url;
+    }
+  });
 }
 
-function receiveJSON(){
-    let url = "/play/move_handler";
+function addClientToQueue() {
+  const url = "/play/queue_handler";
 
-    var move = fetch(url).then(response => response.json()).then(data => {
-        console.log(data["move"]);
-        document.getElementById("result").innerHTML = data["move"];
-    });
-}
+  const data = JSON.stringify({ "queue": "add" });
 
-function getMatchFromQueue(){
-    let url = '/play/request_match_from_queue'
-
-    console.log("Requesting match");
-    fetch(url).then(response => response.json()).then(data => {
-        if (data["match_found"] == true) {
-            let url = data["match_url"];
-            console.log(url);
-            window.location.href = url;
-        }
-    });
-}
-
-function addClientToQueue(){
-    let url = "/play/queue_handler";
-
-    var data = JSON.stringify({"queue" : "add" });
-
-    fetch(url, {
-        "method" : "POST",
-        "headers" : {"Content-Type" : "application/json"},
-        "body" : JSON.stringify(data)
-    })
+  fetch(url, {
+    "method": "POST",
+    "headers": { "Content-Type": "application/json" },
+    "body": JSON.stringify(data),
+  })
     .then(document.getElementById("queue-btn").innerHTML = "Leave Queue")
     .then(queued = true);
 
-    matchFromQueueInterval = setInterval(getMatchFromQueue, 6000);
-
+  matchFromQueueInterval = setInterval(getMatchFromQueue, 1000);
 }
 
-function removeClientFromQueue(){
-    // Check if queued as we call this function on unload
-    if (queued == false){
-        return;
-    }
-    let url = "/play/queue_handler";
+function removeClientFromQueue() {
+  // Check if queued as we call this function on unload
+  if (queued == false) {
+    return;
+  }
+  const url = "/play/queue_handler";
 
-    var data = JSON.stringify({"queue" : "remove" });
+  const data = JSON.stringify({ "queue": "remove" });
 
-    fetch(url, {
-        "method" : "POST",
-        "headers" : {"Content-Type" : "application/json"},
-        "body" : JSON.stringify(data)
-    })
+  fetch(url, {
+    "method": "POST",
+    "headers": { "Content-Type": "application/json" },
+    "body": JSON.stringify(data),
+  })
     .then(clearInterval(matchFromQueueInterval))
     .then(document.getElementById("queue-btn").innerHTML = "Join Queue")
     .then(queued = false);
 }
 
-function toggleQueue(){
-    if (queued == false){
-        addClientToQueue();
-        return;
-    }
-    removeClientFromQueue();
+function toggleQueue() {
+  if (queued == false) {
+    addClientToQueue();
+    return;
+  }
+  removeClientFromQueue();
 }
+
