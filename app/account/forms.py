@@ -1,11 +1,10 @@
-from ast import Pass
-from flask import Flask
-from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, ValidationError, PasswordField
-from wtforms.validators import DataRequired, Length, EqualTo, Email,Optional
-from ..utils import RedirectForm
 from ..models import User
+from ..utils import RedirectForm
+from flask import Flask
 from flask_login import current_user
+from flask_wtf import FlaskForm
+from wtforms import PasswordField, StringField, SubmitField, ValidationError
+from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
 class UserSignupForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(1, 32)])

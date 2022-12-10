@@ -1,9 +1,8 @@
+from . import db, login_manager
 from alembic import op
-from . import db
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin
-from . import login_manager
 import enum
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class Colour(enum.Enum):
     white = "White"
@@ -68,7 +67,8 @@ class Move(db.Model):
     __tablename__ = "moves"
 
     id = db.Column(db.Integer, primary_key = True)
-    move = db.Column(db.String(128), nullable = False)
+    move = db.Column(db.String(8), nullable = False)
+    fen = db.Column(db.String(128), nullable = False)
     colour = db.column(db.Enum(Colour))
     # Match this move belongs
     match_id = db.Column(db.String(16), db.ForeignKey('matches.game_id'), nullable = False, index = True)
@@ -105,6 +105,12 @@ class DBWrapper:
             return opponent.id
         return None
 
+    def get_user_queue_state(self, user_id):
+        """
+        Returns the queue object for a given user_id
+        """
+        return Queue.query.filter_by(id = user_id).first()
+
     def create_new_live_match(self, match_id, white, black):
         """
         Creates a new match
@@ -118,6 +124,28 @@ class DBWrapper:
         self.db.session.add(white_queue)
         self.db.session.add(black_queue)
         self.db.session.commit()
+
+    def get_match_fen(self, game_id):
+        """
+        Gets the current FEN for the given game_id.
+        If game_id doesn't exist return FEN for starting position
+        """
+        match = LiveMatch.query.filter_by(game_id = game_id).first()
+        if match:
+            return match.fen
+        return LiveMatch.fen.default
+
+    def get_live_match(self, game_id):
+        """
+        Gets the live match for the given game_id
+        """
+        return LiveMatch.query.filter_by(game_id = game_id).first()
+
+    def get_user_from_username(self, username):
+        """
+        Retunrs the user object for the given username
+        """
+        return User.query.filter_by(username = username).first()
 
 
     def mark_live_match_finished(self):
@@ -134,7 +162,7 @@ class DBWrapper:
         match.fen = fen
         db.session.commit()
 
-    def add_move(self, move, match_id):
+    def add_move(self, move, fen, match_id):
         """
         Adds a move the the Move table, move number is calculated
         """
@@ -145,8 +173,16 @@ class DBWrapper:
             move_number = 1
         # All odd moves are made by White, all even by Black
         colour = Colour.black if move_number % 2 == 0 else Colour.white
-        move = Move(move = move, colour = colour, match_id = match_id, move_number = move_number)
+        move = Move(move = move, fen = fen, colour = colour, match_id = match_id, move_number = move_number)
         db.session.add(move)
         db.session.commit()
+
+    def get_all_moves(self, match_id):
+        """
+        Returns a list of tuples containing (move_number, fen) object for all moves for the given match_id
+        """
+        # May need to add order by
+        moves = Move.query.filter_by(match_id = match_id).all()
+        return [(move.move_number, move.move, move.fen) for move in moves]
 
 db_instance = DBWrapper(db)

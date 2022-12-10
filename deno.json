@@ -1,0 +1,10 @@
+{
+  "fmt": {
+    "files": {
+      "include": ["app/"]
+    },
+    "options": {
+      "indentWidth": 4
+    }
+  }
+}
