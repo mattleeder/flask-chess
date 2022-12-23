@@ -1,0 +1,7 @@
+{% extends "account/settings.html" %}
+{% from 'bootstrap5/form.html' import render_form, render_field %}
+
+{% block subcontent %}
+{{ render_field(form.username, disabled = True)}}
+{{ render_field(form.email, disabled = True)}}
+{% endblock %}

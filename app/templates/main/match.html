@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Jagedeep Chess - Play{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link href="{{ url_for('static', filename='css/main/play.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block body_attribs %}
+{{ super() }}
+onload="startGame()"
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+<div class="container-fluid text-left">
+    <div class="row justify-content-start">
+        <div class="page-header">
+            <h1>Match {{ game_id }}</h1>
+            <h2>You have the {{ colour }} pieces</h2>
+        </div>
+    </div>
+</div>
+<img src="{{url_for('static', filename='images/ChessPiecesArray.png')}}" id="piece-image" style="visibility:hidden">
+<div class="hidden" id="game-id">{{ game_id }}</div>
+<div class="hidden" id="result"></div>
+<script src="{{url_for('static', filename='js/chess.js')}}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+<script type="text/javascript" charset="utf-8">
+    const room = "{{ game_id }}";
+    var fen = "{{ fen }}";
+    const socket = io();
+    const playerColour = "{{ colour }}";
+    console.log(`Player colour is ${playerColour}`);
+    var turn = "White";
+    var receivedMove;
+    socket.emit('join', {'match_id' : room});
+    socket.on('server_response', function(data) {
+        let result = document.getElementById('result');
+        result.innerHTML = data['move'];
+        receivedMove(data);
+        }
+    );
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Jagedeep Chess - Play{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link href="{{ url_for('static', filename='css/main/play.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block body_attribs %}
+{{ super() }}
+onunload="removeClientFromQueue()"
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+<script src="{{url_for('static', filename='js/queue.js')}}"></script>
+<div class="container-fluid text-left">
+    <div class="row justify-content-start">
+        <div class="col-4">
+            <div class="page-header">
+                <h1>Play</h1>
+            </div>
+            <button type="button" class="btn btn-dark" id="queue-btn" onclick="toggleQueue()">Join Queue</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

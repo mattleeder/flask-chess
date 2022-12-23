@@ -1,0 +1,45 @@
+.nav-tabs {
+    border-bottom: 0px solid #e6dee3;
+  }
+  .nav-tabs .nav-link {
+    margin-bottom: -1px;
+    background: none;
+    border: 1px solid transparent;
+    border-top-left-radius: 0rem;
+    border-top-right-radius: 0rem;
+  }
+  .nav-tabs .nav-link:hover, .nav-tabs .nav-link:focus {
+    border-color: #e7890e;
+    isolation: isolate;
+    border-left: 0px;
+    border-top: 0px;
+    border-bottom: 0px;
+  }
+  .nav-tabs .nav-link.disabled {
+    color: #6c757d;
+    background-color: transparent;
+    border-color: transparent;
+  }
+  .nav-tabs .nav-link.active,
+  .nav-tabs .nav-item.show .nav-link {
+    border-color: #e7890e;
+    isolation: isolate;
+    border-left: 0px;
+    border-top: 0px;
+    border-bottom: 0px;
+  }
+  .nav-tabs .dropdown-menu {
+    margin-top: -1px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+  .nav-link:hover, .nav-link:focus {
+    color: #0a58ca;
+  }
+  .nav-link {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: #0d6efd;
+    text-decoration: none;
+    transition: none;
+  }
